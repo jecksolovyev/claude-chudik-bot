@@ -55,8 +55,9 @@ function setupWebhook(app) {
     next();
   });
 
-  // Meta sends a GET to verify the webhook URL during setup
-  app.get('/webhook', (req, res) => {
+  // Meta sends a GET to verify the webhook URL during setup.
+  // Handles both /webhook and / in case the callback URL was registered without the path.
+  function handleVerification(req, res) {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
@@ -69,10 +70,13 @@ function setupWebhook(app) {
     logWebhookIn(req);
     console.warn(`[webhook] GET 403 — mode="${mode}" token_received="${token}" token_expected="${process.env.VERIFY_TOKEN}"`);
     res.sendStatus(403);
-  });
+  }
 
-  // Incoming events
-  app.post('/webhook', (req, res) => {
+  app.get('/', handleVerification);
+  app.get('/webhook', handleVerification);
+
+  // Incoming events — handle both / and /webhook
+  function handleEvent(req, res) {
     logWebhookIn(req);
     // Must respond 200 quickly so Meta doesn't retry
     res.sendStatus(200);
@@ -83,7 +87,10 @@ function setupWebhook(app) {
     }
 
     processWebhook(req.body).catch(e => console.error('[webhook] processWebhook error:', e));
-  });
+  }
+
+  app.post('/', handleEvent);
+  app.post('/webhook', handleEvent);
 }
 
 module.exports = { setupWebhook };
