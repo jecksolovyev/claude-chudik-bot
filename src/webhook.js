@@ -49,6 +49,12 @@ async function processWebhook(body) {
 }
 
 function setupWebhook(app) {
+  // Log every incoming request before routing so nothing arrives silently
+  app.use((req, _res, next) => {
+    console.log(`[${new Date().toISOString().replace('T', ' ').slice(0, 23)}] ${req.method} ${req.originalUrl}`);
+    next();
+  });
+
   // Meta sends a GET to verify the webhook URL during setup
   app.get('/webhook', (req, res) => {
     const mode = req.query['hub.mode'];
@@ -59,6 +65,9 @@ function setupWebhook(app) {
       console.log('[webhook] Verified by Meta');
       return res.status(200).send(challenge);
     }
+
+    logWebhookIn(req);
+    console.warn(`[webhook] GET 403 — mode="${mode}" token_received="${token}" token_expected="${process.env.VERIFY_TOKEN}"`);
     res.sendStatus(403);
   });
 

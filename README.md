@@ -22,6 +22,8 @@ Steps 1–3 are covered below.
 
 ### 1a. Create the app
 
+https://www.youtube.com/watch?v=SAcXIpE3G_o
+
 1. Go to [developers.facebook.com](https://developers.facebook.com) → **My Apps → Create App**
 2. Choose **Business** as the app type
 3. Fill in a name and contact email, click **Create App**
