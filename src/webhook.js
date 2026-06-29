@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
-const { handleComment } = require('./handlers/comment');
+const { handleIncomingMessage } = require('./handlers/message');
 const { handleMessaging } = require('./handlers/messaging');
 const { logWebhookIn } = require('./logger');
 
@@ -28,20 +28,17 @@ async function processWebhook(body) {
   if (body.object !== 'instagram') return;
 
   for (const entry of body.entry ?? []) {
-    // Comment events
-    for (const change of entry.changes ?? []) {
-      if (change.field === 'comments') {
-        await handleComment(change.value).catch(e =>
-          console.error('[webhook] comment handler error:', e),
-        );
-      }
-    }
-
-    // Messaging events (quick replies and postback buttons)
+    // Messaging events — DMs, quick replies, and postback buttons
     for (const messaging of entry.messaging ?? []) {
       if (messaging.postback || messaging.message?.quick_reply) {
+        // "Done" button tap → follow check
         await handleMessaging(messaging).catch(e =>
           console.error('[webhook] messaging handler error:', e),
+        );
+      } else if (messaging.message && !messaging.message.is_echo) {
+        // Incoming text DM → keyword trigger
+        await handleIncomingMessage(messaging).catch(e =>
+          console.error('[webhook] message handler error:', e),
         );
       }
     }

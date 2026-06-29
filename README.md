@@ -1,8 +1,8 @@
 # Instagram Keyword DM Bot
 
-Monitors Instagram posts/reels for keyword comments and automatically sends a DM flow: a follow-prompt with a **Done** button, a follower verification, then a gift link.
+Listens for keyword **DMs** to your Instagram account and automatically runs a DM flow: a follow-prompt with a **Done** button, a follower verification, then a gift link.
 
-Multiple posts and multiple keywords per post are supported. All campaign config lives in `campaigns.json` and hot-reloads without a restart.
+A user just sends you a direct message containing the keyword (e.g. "GIFT") and the bot takes over. Multiple keywords are supported via a single account-wide list. All config lives in `campaigns.json` and hot-reloads without a restart.
 
 ---
 
@@ -90,9 +90,10 @@ Copy the `https://…ngrok-free.app` URL — you'll need it in the next step.
 3. **Callback URL**: `https://your-ngrok-url/webhook`
 4. **Verify token**: the same string you put in `.env` as `VERIFY_TOKEN`
 5. Click **Verify and Save** — the bot must be running for this to succeed
-6. After saving, subscribe to these two fields:
-   - `comments`
+6. After saving, subscribe to this field:
    - `messages`
+
+   (The bot no longer uses `comments` — leave it unsubscribed.)
 
 ---
 
@@ -122,42 +123,30 @@ GET https://graph.instagram.com/refresh_access_token
 
 ## 6. Configure campaigns
 
-Edit `campaigns.json`. Each campaign maps a post ID to one or more keywords:
+Edit `campaigns.json`. It holds one account-wide list of keywords — no post IDs, since the trigger is a DM rather than a comment on a specific reel:
 
 ```json
 {
-  "campaigns": [
+  "keywords": [
     {
-      "post_id": "1234567890",
-      "active": true,
-      "keywords": [
-        {
-          "word": "GIFT",
-          "greet_message": "To get your gift, follow my profile first! Once you're following, tap the Done button below.",
-          "success_message": "Welcome! Here's your gift:",
-          "gift_url": "https://drive.google.com/your-file"
-        },
-        {
-          "word": "BONUS",
-          "greet_message": "Follow me and tap Done to unlock your bonus!",
-          "success_message": "Here's your exclusive bonus:",
-          "gift_url": "https://notion.so/your-page"
-        }
-      ]
+      "word": "GIFT",
+      "greet_message": "To get your gift, follow my profile first! Once you're following, tap the Done button below.",
+      "success_message": "Welcome! Here's your gift:",
+      "gift_url": "https://drive.google.com/your-file"
+    },
+    {
+      "word": "BONUS",
+      "greet_message": "Follow me and tap Done to unlock your bonus!",
+      "success_message": "Here's your exclusive bonus:",
+      "gift_url": "https://notion.so/your-page"
     }
   ]
 }
 ```
 
-**How to find a post ID:** open your post on Instagram in a browser — the URL is `instagram.com/p/SHORTCODE/`. To convert the shortcode to a numeric ID, query the Graph API:
+A keyword matches if it appears **anywhere** in the DM (case-insensitive) — so "hey can I get GIFT" matches the `GIFT` keyword.
 
-```
-GET https://graph.instagram.com/v25.0/me/media?fields=id,shortcode&access_token=TOKEN
-```
-
-This returns all your media with both the numeric `id` and the `shortcode`.
-
-`campaigns.json` is re-read on every incoming webhook — no restart needed when you add or change campaigns.
+`campaigns.json` is re-read on every incoming webhook — no restart needed when you add or change keywords.
 
 ---
 
@@ -165,11 +154,11 @@ This returns all your media with both the numeric `id` and the `shortcode`.
 
 | Situation | What happens |
 |---|---|
-| User comments the keyword (exact match, case-insensitive) | Bot sends a DM with the `greet_message` and a **Done** button |
+| User DMs a message containing the keyword (case-insensitive, matched anywhere in the text) | Bot replies with the `greet_message` and a **Done** button |
 | User taps **Done** and is confirmed following | Bot sends `success_message` + **Get Gift** button linking to `gift_url` |
 | User taps **Done** and is NOT following (or follow status unverifiable) | Bot resends the `greet_message` with the **Done** button again |
-| User's profile is private — DM cannot be delivered | Bot replies publicly to their comment asking them to make their profile public |
-| User comments a reply to another comment | Ignored |
+| User DMs a message with no matching keyword | Ignored |
+| The bot's own outgoing DMs (echoed back by Instagram) | Ignored |
 
 ---
 
@@ -194,4 +183,4 @@ Every incoming webhook and every outgoing Instagram API call is printed to stdou
 
 For testing, add your Instagram account as a **Tester** in App Dashboard → Roles → Testers. The bot will work without Meta's App Review in that mode.
 
-For a public launch (real users, not just testers), you'll need to submit `instagram_manage_comments` and `instagram_manage_messages` for App Review in the Meta Developer Console.
+For a public launch (real users, not just testers), you'll need to submit `instagram_manage_messages` for App Review in the Meta Developer Console.

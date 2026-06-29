@@ -43,16 +43,6 @@ async function sendMessage(recipientId, messagePayload) {
   return res.data;
 }
 
-// Post a public reply to a comment (used for private profile fallback).
-async function replyToComment(commentId, text) {
-  const res = await api.post(
-    `${BASE}/${commentId}/replies`,
-    { message: text },
-    { params: { access_token: token() } },
-  );
-  return res.data;
-}
-
 // Check whether the user follows our business account.
 // Returns true/false, or null if the field is unavailable for this account type.
 async function checkIsFollowing(userIgsid) {
@@ -70,4 +60,4 @@ async function checkIsFollowing(userIgsid) {
   }
 }
 
-module.exports = { sendMessage, replyToComment, checkIsFollowing };
+module.exports = { sendMessage, checkIsFollowing };

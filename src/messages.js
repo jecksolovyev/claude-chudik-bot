@@ -1,14 +1,14 @@
 'use strict';
 
 // Quick reply with embedded text — sends greet_message and "Done" button as one message.
-function buildFollowPromptPayload(postId, keyword, greetMessage) {
+function buildFollowPromptPayload(keyword, greetMessage) {
   return {
     text: greetMessage,
     quick_replies: [
       {
         content_type: 'text',
         title: 'Done',
-        payload: `DONE:${postId}:${keyword}`,
+        payload: `DONE:${keyword}`,
       },
     ],
   };

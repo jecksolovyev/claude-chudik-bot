@@ -1,10 +1,10 @@
 'use strict';
 
-const { findByPostAndKeyword } = require('../services/campaigns');
+const { findByKeyword } = require('../services/campaigns');
 const { sendMessage, checkIsFollowing } = require('../services/instagram');
 const { buildFollowPromptPayload, buildSuccessTextPayload, buildGiftButtonPayload } = require('../messages');
 
-// Handles both postback buttons and quick replies — both carry a DONE:postId:keyword payload.
+// Handles both postback buttons and quick replies — both carry a DONE:keyword payload.
 async function handleMessaging(messaging) {
   const userId = messaging.sender?.id;
 
@@ -19,17 +19,13 @@ async function handleMessaging(messaging) {
 
   if (!payload.startsWith('DONE:')) return;
 
-  // Payload format: DONE:{postId}:{keyword}
-  const rest = payload.slice('DONE:'.length);
-  const colonIdx = rest.indexOf(':');
-  if (colonIdx === -1) return;
+  // Payload format: DONE:{keyword}
+  const keyword = payload.slice('DONE:'.length);
+  if (!keyword) return;
 
-  const postId = rest.slice(0, colonIdx);
-  const keyword = rest.slice(colonIdx + 1);
-
-  const match = findByPostAndKeyword(postId, keyword);
+  const match = findByKeyword(keyword);
   if (!match) {
-    console.warn(`[messaging] No campaign match — postId=${postId} keyword=${keyword}`);
+    console.warn(`[messaging] No keyword match — keyword=${keyword}`);
     return;
   }
 
@@ -41,7 +37,7 @@ async function handleMessaging(messaging) {
   if (isFollowing !== true) {
     const reason = isFollowing === null ? 'follow status unverifiable' : 'not following';
     console.log(`[messaging] ${userId} — ${reason}, resending greet`);
-    await sendMessage(userId, buildFollowPromptPayload(postId, keyword, keywordConfig.greet_message));
+    await sendMessage(userId, buildFollowPromptPayload(keyword, keywordConfig.greet_message));
     return;
   }
 
