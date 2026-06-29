@@ -6,22 +6,33 @@ const { handleMessaging } = require('./handlers/messaging');
 const { logWebhookIn } = require('./logger');
 
 function verifySignature(req) {
-  const appSecret = process.env.INSTAGRAM_APP_SECRET;
+  // Trim defensively — a stray space/newline pasted into the env var would
+  // otherwise silently break every signature.
+  const appSecret = (process.env.INSTAGRAM_APP_SECRET || '').trim();
   if (!appSecret) return true; // skip verification if secret not configured
 
   const sig = req.headers['x-hub-signature-256'];
-  if (!sig) return false;
+  if (!sig) {
+    console.warn('[webhook] missing x-hub-signature-256 header');
+    return false;
+  }
 
   const expected = 'sha256=' + crypto
     .createHmac('sha256', appSecret)
     .update(req.rawBody)
     .digest('hex');
 
-  try {
-    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
-  } catch {
-    return false;
+  const ok =
+    sig.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+
+  if (!ok) {
+    console.warn(
+      `[webhook] sig mismatch — received=${sig.slice(0, 18)}… computed=${expected.slice(0, 18)}… ` +
+      `secretLen=${appSecret.length} rawBodyLen=${req.rawBody?.length ?? 'undefined'}`,
+    );
   }
+  return ok;
 }
 
 async function processWebhook(body) {
