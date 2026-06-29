@@ -2,7 +2,7 @@
 
 const { findKeywordMatch } = require('../services/campaigns');
 const { sendMessage } = require('../services/instagram');
-const { buildFollowPromptPayload } = require('../messages');
+const { buildTextPayload, buildDoneButtonPayload } = require('../messages');
 
 // Handles an incoming text DM — the keyword trigger.
 async function handleIncomingMessage(messaging) {
@@ -25,7 +25,8 @@ async function handleIncomingMessage(messaging) {
   const { keywordConfig } = match;
   console.log(`[message] Keyword "${keywordConfig.word}" matched in DM from user ${userId}`);
 
-  await sendMessage(userId, buildFollowPromptPayload(keywordConfig.word, keywordConfig.greet_message));
+  await sendMessage(userId, buildTextPayload(keywordConfig.greet_message));
+  await sendMessage(userId, buildDoneButtonPayload(keywordConfig.word));
   console.log(`[message] Follow prompt DM sent to ${userId}`);
 }
 

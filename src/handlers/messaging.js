@@ -2,7 +2,7 @@
 
 const { findByKeyword } = require('../services/campaigns');
 const { sendMessage, checkIsFollowing } = require('../services/instagram');
-const { buildFollowPromptPayload, buildSuccessTextPayload, buildGiftButtonPayload } = require('../messages');
+const { buildTextPayload, buildDoneButtonPayload, buildGiftButtonPayload } = require('../messages');
 
 // Handles both postback buttons and quick replies — both carry a DONE:keyword payload.
 async function handleMessaging(messaging) {
@@ -37,12 +37,13 @@ async function handleMessaging(messaging) {
   if (isFollowing !== true) {
     const reason = isFollowing === null ? 'follow status unverifiable' : 'not following';
     console.log(`[messaging] ${userId} — ${reason}, resending greet`);
-    await sendMessage(userId, buildFollowPromptPayload(keyword, keywordConfig.greet_message));
+    await sendMessage(userId, buildTextPayload(keywordConfig.greet_message));
+    await sendMessage(userId, buildDoneButtonPayload(keyword));
     return;
   }
 
   console.log(`[messaging] ${userId} confirmed following — sending gift`);
-  await sendMessage(userId, buildSuccessTextPayload(keywordConfig.success_message));
+  await sendMessage(userId, buildTextPayload(keywordConfig.success_message));
   await sendMessage(userId, buildGiftButtonPayload(keywordConfig.gift_url));
 }
 
