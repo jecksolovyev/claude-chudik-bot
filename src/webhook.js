@@ -57,6 +57,10 @@ async function processWebhook(body) {
 }
 
 function setupWebhook(app) {
+  // Container healthcheck. Registered before the request logger so periodic
+  // probes don't drown out the actual webhook traffic in the logs.
+  app.get('/health', (_req, res) => res.sendStatus(200));
+
   // Log every incoming request before routing so nothing arrives silently
   app.use((req, _res, next) => {
     console.log(`[${new Date().toISOString().replace('T', ' ').slice(0, 23)}] ${req.method} ${req.originalUrl}`);
